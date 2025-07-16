@@ -18,22 +18,27 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.post("/predict")
-async def predict(file: UploadFile = File(...)):
+@app.post("/predict/{language}")
+async def predict(language: str, file: UploadFile = File(...)):
     bytes_data = await file.read()
     message = predict_image(bytes_data)
     if (message['result'] == False):
         return {"result": False, "message": message['message']}
     else:
+        crop = message['crop']
+        disease = message['disease']
+        precautions = get_precautions_for_disease(crop, disease)
+        precautions = translate_precautions(language, precautions)
         return {
             "result": True,
             "message": message['message'],
-            "crop": message['crop'],
-            "disease": message['disease']
+            "crop": crop,
+            "disease": disease,
+            "precautions": precautions
         }
     
-@app.post("/Suggestions/{language}/{crop}/{disease}")
-async def suggestions(language: str, crop: str, disease: str):
-    precautions = get_precautions_for_disease(crop, disease)
-    precautions = translate_precautions(language, precautions)
-    return {"result": True, "precautions": precautions}
+# @app.post("/Suggestions/{language}/{crop}/{disease}")
+# async def suggestions(language: str, crop: str, disease: str):
+#     precautions = get_precautions_for_disease(crop, disease)
+#     precautions = translate_precautions(language, precautions)
+#     return {"result": True, "precautions": precautions}
